@@ -1,0 +1,835 @@
+% Licence, CC-BY
+\documentclass[compress, ucs]{beamer}\usepackage[]{graphicx}\usepackage[]{color}
+%% maxwidth is the original width if it is less than linewidth
+%% otherwise use linewidth (to make sure the graphics do not exceed the margin)
+\makeatletter
+\def\maxwidth{ %
+  \ifdim\Gin@nat@width>\linewidth
+    \linewidth
+  \else
+    \Gin@nat@width
+  \fi
+}
+\makeatother
+
+\definecolor{fgcolor}{rgb}{0.345, 0.345, 0.345}
+\newcommand{\hlnum}[1]{\textcolor[rgb]{0.686,0.059,0.569}{#1}}%
+\newcommand{\hlstr}[1]{\textcolor[rgb]{0.192,0.494,0.8}{#1}}%
+\newcommand{\hlcom}[1]{\textcolor[rgb]{0.678,0.584,0.686}{\textit{#1}}}%
+\newcommand{\hlopt}[1]{\textcolor[rgb]{0,0,0}{#1}}%
+\newcommand{\hlstd}[1]{\textcolor[rgb]{0.345,0.345,0.345}{#1}}%
+\newcommand{\hlkwa}[1]{\textcolor[rgb]{0.161,0.373,0.58}{\textbf{#1}}}%
+\newcommand{\hlkwb}[1]{\textcolor[rgb]{0.69,0.353,0.396}{#1}}%
+\newcommand{\hlkwc}[1]{\textcolor[rgb]{0.333,0.667,0.333}{#1}}%
+\newcommand{\hlkwd}[1]{\textcolor[rgb]{0.737,0.353,0.396}{\textbf{#1}}}%
+
+\usepackage{framed}
+\makeatletter
+\newenvironment{kframe}{%
+ \def\at@end@of@kframe{}%
+ \ifinner\ifhmode%
+  \def\at@end@of@kframe{\end{minipage}}%
+  \begin{minipage}{\columnwidth}%
+ \fi\fi%
+ \def\FrameCommand##1{\hskip\@totalleftmargin \hskip-\fboxsep
+ \colorbox{shadecolor}{##1}\hskip-\fboxsep
+     % There is no \\@totalrightmargin, so:
+     \hskip-\linewidth \hskip-\@totalleftmargin \hskip\columnwidth}%
+ \MakeFramed {\advance\hsize-\width
+   \@totalleftmargin\z@ \linewidth\hsize
+   \@setminipage}}%
+ {\par\unskip\endMakeFramed%
+ \at@end@of@kframe}
+\makeatother
+
+\definecolor{shadecolor}{rgb}{.97, .97, .97}
+\definecolor{messagecolor}{rgb}{0, 0, 0}
+\definecolor{warningcolor}{rgb}{1, 0, 1}
+\definecolor{errorcolor}{rgb}{1, 0, 0}
+\newenvironment{knitrout}{}{} % an empty environment to be redefined in TeX
+
+\usepackage{alltt}
+\usepackage[T2A]{fontenc}
+\usepackage[utf8x]{inputenc}
+\usepackage[english, russian]{babel}
+\usepackage{amssymb}
+\usepackage{url}
+% Breaking long urls on hyphens
+\makeatletter
+\g@addto@macro{\UrlBreaks}{\UrlOrds}
+\makeatother
+\usepackage{pscyr}
+\usepackage{graphicx}
+\usetheme{Warsaw}
+\usecolortheme{beaver}
+\usefonttheme{professionalfonts}
+\beamertemplatenavigationsymbolsempty
+\setbeamertemplate{headline}{}
+\expandafter\def\expandafter\insertshorttitle\expandafter{%
+\insertshorttitle\hfill%
+\insertframenumber\,/\,\inserttotalframenumber}
+
+\makeatletter
+\definecolor{beaverred}{RGB}{142, 19, 19}
+\setbeamertemplate{enumerate items}{\color{beaverred}$\blacklozenge$}
+\setbeamertemplate{itemize items}{\color{beaverred}$\blacklozenge$}
+\setbeamertemplate{section in toc}[square]
+\setbeamertemplate{subsection in toc}[square]
+\makeatother
+% --------------------------------------------------------------
+% Setting up some knitr options
+
+% --------------------------------------------------------------
+\IfFileExists{upquote.sty}{\usepackage{upquote}}{}
+\begin{document}
+\title[dplyr/tidyr/magrittr]{\normalsize Современный взгляд на предобработку данных: \\
+dplyr, tidyr и magrittr}
+\author{Антон Антонов}
+\date{28 марта 2015}
+%\institute{\textbf {SPb R User Group}}
+\titlegraphic{\includegraphics[width=2cm]{logo}}
+%\email{tonytonov@gmail.com}
+\maketitle
+% --------------------------------------------------------------
+\begin{frame}[fragile]{Цикл жизни данных в R}
+\begin{center}
+\includegraphics[width=\linewidth]{cycle}
+\end{center}
+\pause
+\begin{itemize}
+\item tidyr 0.2 (Hadley Wickham, RStudio)
+\item dplyr 0.4 (Hadley Wickham, Roman Francois, RStudio)
+\item magrittr 1.5 (Stefan Milton Bache, Hadley Wickham)
+\end{itemize}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{magrittr::\%>\%}
+При необходимости последовательно вызвать несколько функций подряд есть следующие возможности.
+\pause
+\begin{itemize}
+\item Вложенные вызовы (nested calls):
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{arrange}\hlstd{(}
+  \hlkwd{summarize}\hlstd{(}
+    \hlkwd{filter}\hlstd{(data, variable} \hlopt{==} \hlnum{42}\hlstd{),}
+    \hlkwc{Total} \hlstd{=} \hlkwd{sum}\hlstd{(variable)}
+  \hlstd{),}
+  \hlkwd{desc}\hlstd{(Total)}
+\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\pause
+\item Создание промежуточных переменных:
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{a} \hlkwb{<-} \hlkwd{filter}\hlstd{(data, variable} \hlopt{==} \hlnum{42}\hlstd{)}
+\hlstd{b} \hlkwb{<-} \hlkwd{summarise}\hlstd{(a,} \hlkwc{Total} \hlstd{=} \hlkwd{sum}\hlstd{(variable))}
+\hlstd{c} \hlkwb{<-} \hlkwd{arrange}\hlstd{(b,} \hlkwd{desc}\hlstd{(Total))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\pause
+\item Конвейеры (pipes) при помощи оператора \%>\%:
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{data} \hlopt{%>%}
+  \hlkwd{filter}\hlstd{(variable} \hlopt{==} \hlnum{42}\hlstd{)} \hlopt{%>%}
+  \hlkwd{summarise}\hlstd{(}\hlkwc{Total} \hlstd{=} \hlkwd{sum}\hlstd{(variable))} \hlopt{%>%}
+  \hlkwd{arrange}\hlstd{(}\hlkwd{desc}\hlstd{(Total))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\end{itemize}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{magrittr::\%>\%}
+Следующий кусок кода содержит вложенные вызовы, формулу с точкой и анонимную функцию.
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{car_data} \hlkwb{<-}
+  \hlkwd{subset}\hlstd{(}
+    \hlkwd{transform}\hlstd{(}
+      \hlkwd{aggregate}\hlstd{(}
+        \hlstd{.} \hlopt{~} \hlstd{cyl,}
+        \hlkwc{data} \hlstd{= mtcars[mtcars}\hlopt{$}\hlstd{hp} \hlopt{>} \hlnum{100}\hlstd{, ],}
+        \hlkwc{FUN} \hlstd{=} \hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)} \hlkwd{round}\hlstd{(}\hlkwd{mean}\hlstd{(x),} \hlnum{2}\hlstd{)}
+      \hlstd{),}
+      \hlkwc{kpl} \hlstd{= mpg} \hlopt{*} \hlnum{0.4251}
+    \hlstd{),}
+    \hlkwc{select} \hlstd{=} \hlkwd{c}\hlstd{(cyl, hp, kpl)}
+  \hlstd{)}
+\hlkwd{print}\hlstd{(car_data)}
+\end{alltt}
+\begin{verbatim}
+##   cyl     hp       kpl
+## 1   4 111.00 11.010090
+## 2   6 122.29  8.391474
+## 3   8 209.21  6.419010
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{magrittr::\%>\%}
+Используем оператор, работающий по двум основным правилам:
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{x} \hlopt{%>%} \hlkwd{f}\hlstd{(y)}            \hlcom{# same as f(x, y)}
+\hlstd{x} \hlopt{%>%} \hlkwd{g}\hlstd{(y,} \hlkwc{param} \hlstd{= .)} \hlcom{# same as g(y, param = x)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\pause
+Тот же код в виде конвейера:
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hlstd{(magrittr)}
+\hlstd{car_data} \hlkwb{<-}
+  \hlstd{mtcars} \hlopt{%>%}
+  \hlkwd{subset}\hlstd{(hp} \hlopt{>} \hlnum{100}\hlstd{)} \hlopt{%>%}
+  \hlkwd{aggregate}\hlstd{(.} \hlopt{~} \hlstd{cyl,} \hlkwc{data} \hlstd{= .,}
+            \hlkwc{FUN} \hlstd{=} \hlkwa{function}\hlstd{(}\hlkwc{x}\hlstd{)} \hlkwd{round}\hlstd{(}\hlkwd{mean}\hlstd{(x),} \hlnum{2}\hlstd{))} \hlopt{%>%}
+  \hlkwd{transform}\hlstd{(}\hlkwc{kpl} \hlstd{= mpg} \hlopt{*} \hlnum{0.4251}\hlstd{)} \hlopt{%>%}
+  \hlkwd{subset}\hlstd{(}\hlkwc{select} \hlstd{=} \hlkwd{c}\hlstd{(cyl, hp, kpl))} \hlopt{%>%}
+  \hlkwd{print}
+\end{alltt}
+\begin{verbatim}
+##   cyl     hp       kpl
+## 1   4 111.00 11.010090
+## 2   6 122.29  8.391474
+## 3   8 209.21  6.419010
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{magrittr::\%>\%}
+Конвейеры можно (но не нужно) использовать практически везде:
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{car_data} \hlkwb{<-}
+  \hlstd{mtcars} \hlopt{%>%}
+  \hlkwd{`[`}\hlstd{(.}\hlopt{$}\hlstd{hp} \hlopt{>} \hlnum{100}\hlstd{, )} \hlopt{%>%}
+  \hlkwd{aggregate}\hlstd{(.} \hlopt{~} \hlstd{cyl,} \hlkwc{data} \hlstd{= .,}
+            \hlkwc{FUN} \hlstd{= .} \hlopt{%>%} \hlstd{mean} \hlopt{%>%} \hlkwd{round}\hlstd{(}\hlnum{2}\hlstd{))} \hlopt{%>%}
+  \hlkwd{transform}\hlstd{(}\hlkwc{kpl} \hlstd{= mpg} \hlopt{%>%} \hlkwd{multiply_by}\hlstd{(}\hlnum{0.4251}\hlstd{))} \hlopt{%>%}
+  \hlkwd{subset}\hlstd{(}\hlkwc{select} \hlstd{=} \hlkwd{c}\hlstd{(cyl, hp, kpl))} \hlopt{%>%}
+  \hlkwd{print}
+\end{alltt}
+\begin{verbatim}
+##   cyl     hp       kpl
+## 1   4 111.00 11.010090
+## 2   6 122.29  8.391474
+## 3   8 209.21  6.419010
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{Tidy data}
+Концепция ``tidy data'':
+\begin{itemize}
+\item каждая колонка (столбец) -- переменная;
+\item каждый ряд (строка) -- наблюдение.
+\end{itemize}
+\pause
+\begin{center}
+\includegraphics[width=0.5\linewidth]{tidy1}
+\end{center}
+\par
+\pause
+Для R такой формат данных наиболее естественен из-за векторизованности многих базовых операций.
+\begin{center}
+\includegraphics[width=0.3\linewidth]{tidy2}
+\end{center}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{tidyr}
+Возьмём результат некоторого воображаемого эксперимента:
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{messy}
+\end{alltt}
+\begin{verbatim}
+##   id     group    work.T1   home.T1   work.T2    home.T2
+## 1  1 treatment 0.08513597 0.6158293 0.1135090 0.05190332
+## 2  2   control 0.22543662 0.4296715 0.5959253 0.26417767
+## 3  3 treatment 0.27453052 0.6516557 0.3580500 0.39879073
+## 4  4   control 0.27230507 0.5677378 0.4288094 0.83613414
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\pause
+Почему это не ``tidy data''?
+\pause
+\begin{itemize}
+\item Переменные места и времени смешаны;
+\item Одной строке соответствует четыре наблюдения.
+\end{itemize}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{tidyr::gather}
+Преобразуем данные из т.н. ``широкого'' формата в ``длинный'' (wide to long):
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{tidier} \hlkwb{<-} \hlstd{messy} \hlopt{%>%}
+  \hlkwd{gather}\hlstd{(key, bpr,} \hlopt{-}\hlstd{id,} \hlopt{-}\hlstd{group)}
+\hlstd{tidier} \hlopt{%>%} \hlkwd{head}\hlstd{(}\hlnum{8}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##   id     group     key        bpr
+## 1  1 treatment work.T1 0.08513597
+## 2  2   control work.T1 0.22543662
+## 3  3 treatment work.T1 0.27453052
+## 4  4   control work.T1 0.27230507
+## 5  1 treatment home.T1 0.61582931
+## 6  2   control home.T1 0.42967153
+## 7  3 treatment home.T1 0.65165567
+## 8  4   control home.T1 0.56773775
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{tidyr::spread}
+Обратное преобразование (long to wide):
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{tidier} \hlopt{%>%}
+  \hlkwd{spread}\hlstd{(key, bpr)} \hlopt{%>%}
+  \hlkwd{print} \hlopt{%>%}
+  \hlkwd{all.equal}\hlstd{(messy)}
+\end{alltt}
+\begin{verbatim}
+##   id     group    work.T1   home.T1   work.T2    home.T2
+## 1  1 treatment 0.08513597 0.6158293 0.1135090 0.05190332
+## 2  2   control 0.22543662 0.4296715 0.5959253 0.26417767
+## 3  3 treatment 0.27453052 0.6516557 0.3580500 0.39879073
+## 4  4   control 0.27230507 0.5677378 0.4288094 0.83613414
+## [1] TRUE
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{tidyr::separate}
+Разделяем переменные:
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{tidy} \hlkwb{<-} \hlstd{tidier} \hlopt{%>%}
+  \hlkwd{separate}\hlstd{(key,} \hlkwc{into} \hlstd{=} \hlkwd{c}\hlstd{(}\hlstr{"location"}\hlstd{,} \hlstr{"time"}\hlstd{),} \hlkwc{sep} \hlstd{=} \hlstr{"\textbackslash{}\textbackslash{}."}\hlstd{)}
+\hlstd{tidy} \hlopt{%>%} \hlkwd{head}\hlstd{(}\hlnum{8}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##   id     group location time        bpr
+## 1  1 treatment     work   T1 0.08513597
+## 2  2   control     work   T1 0.22543662
+## 3  3 treatment     work   T1 0.27453052
+## 4  4   control     work   T1 0.27230507
+## 5  1 treatment     home   T1 0.61582931
+## 6  2   control     home   T1 0.42967153
+## 7  3 treatment     home   T1 0.65165567
+## 8  4   control     home   T1 0.56773775
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{tidyr::unite}
+Склеиваем переменные обратно:
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{tidy} \hlopt{%>%}
+  \hlkwd{unite}\hlstd{(key, location, time,} \hlkwc{sep} \hlstd{=} \hlstr{"."}\hlstd{)} \hlopt{%>%}
+  \hlkwd{head}\hlstd{(}\hlnum{8}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##   id     group     key        bpr
+## 1  1 treatment work.T1 0.08513597
+## 2  2   control work.T1 0.22543662
+## 3  3 treatment work.T1 0.27453052
+## 4  4   control work.T1 0.27230507
+## 5  1 treatment home.T1 0.61582931
+## 6  2   control home.T1 0.42967153
+## 7  3 treatment home.T1 0.65165567
+## 8  4   control home.T1 0.56773775
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{dplyr::select}
+Выбираем подмножество столбцов (переменных):
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{tidy} \hlopt{%>%}
+  \hlkwd{select}\hlstd{(id, group, location, bpr)} \hlopt{%>%}
+  \hlkwd{head}\hlstd{(}\hlnum{8}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##   id     group location        bpr
+## 1  1 treatment     work 0.08513597
+## 2  2   control     work 0.22543662
+## 3  3 treatment     work 0.27453052
+## 4  4   control     work 0.27230507
+## 5  1 treatment     home 0.61582931
+## 6  2   control     home 0.42967153
+## 7  3 treatment     home 0.65165567
+## 8  4   control     home 0.56773775
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\pause
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{tidy} \hlopt{%>%} \hlkwd{select}\hlstd{(}\hlnum{1}\hlopt{:}\hlnum{3}\hlstd{,} \hlnum{5}\hlstd{)}
+\hlstd{tidy} \hlopt{%>%} \hlkwd{select}\hlstd{(id}\hlopt{:}\hlstd{location,} \hlkwd{starts_with}\hlstd{(}\hlstr{"b"}\hlstd{))}
+\hlstd{tidy} \hlopt{%>%} \hlkwd{select}\hlstd{(}\hlopt{-}\hlstd{time)}
+\hlstd{tidy} \hlopt{%>%} \hlkwd{select}\hlstd{(}\hlopt{-}\hlkwd{contains}\hlstd{(}\hlstr{"m"}\hlstd{))}
+\hlstd{tidy} \hlopt{%>%} \hlkwd{select}\hlstd{(}\hlopt{-}\hlkwd{matches}\hlstd{(}\hlstr{"t.m"}\hlstd{))}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{dplyr::filter}
+Выбираем подмножество строк (наблюдений):
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{tidy} \hlopt{%>%}
+  \hlkwd{filter}\hlstd{(group} \hlopt{==} \hlstr{"control"}\hlstd{, bpr} \hlopt{>} \hlnum{0.5}\hlstd{, id} \hlopt{%in%} \hlnum{4}\hlopt{:}\hlnum{5}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##   id   group location time       bpr
+## 1  4 control     home   T1 0.5677378
+## 2  4 control     home   T2 0.8361341
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{dplyr::group\_by, dplyr::summarize}
+Агрегация по группам:
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{tidy} \hlopt{%>%}
+  \hlkwd{group_by}\hlstd{(time, location)} \hlopt{%>%}
+  \hlkwd{summarize}\hlstd{(}\hlkwc{mean_t} \hlstd{=} \hlkwd{mean}\hlstd{(bpr),} \hlkwc{sd_t} \hlstd{=} \hlkwd{sd}\hlstd{(bpr))}
+\end{alltt}
+\begin{verbatim}
+## Source: local data frame [4 x 4]
+## Groups: time
+## 
+##   time location    mean_t       sd_t
+## 1   T1     home 0.5662236 0.09731072
+## 2   T1     work 0.2143520 0.08906863
+## 3   T2     home 0.3877515 0.33127700
+## 4   T2     work 0.3740734 0.20030382
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{dplyr::arrange}
+Сортировка (например, в разных направлениях по разным переменным):
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{tidy} \hlopt{%>%}
+  \hlkwd{arrange}\hlstd{(time,} \hlkwd{desc}\hlstd{(bpr))}
+\end{alltt}
+\begin{verbatim}
+##    id     group location time        bpr
+## 1   3 treatment     home   T1 0.65165567
+## 2   1 treatment     home   T1 0.61582931
+## 3   4   control     home   T1 0.56773775
+## 4   2   control     home   T1 0.42967153
+## 5   3 treatment     work   T1 0.27453052
+## 6   4   control     work   T1 0.27230507
+## 7   2   control     work   T1 0.22543662
+## 8   1 treatment     work   T1 0.08513597
+## 9   4   control     home   T2 0.83613414
+## 10  2   control     work   T2 0.59592531
+## 11  4   control     work   T2 0.42880942
+## 12  3 treatment     home   T2 0.39879073
+## 13  3 treatment     work   T2 0.35804998
+## 14  2   control     home   T2 0.26417767
+## 15  1 treatment     work   T2 0.11350898
+## 16  1 treatment     home   T2 0.05190332
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{dplyr::mutate}
+Создание новых переменных:
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{tidy} \hlopt{%>%}
+  \hlkwd{mutate}\hlstd{(}\hlkwc{perc} \hlstd{= bpr}\hlopt{/}\hlkwd{sum}\hlstd{(bpr),}
+         \hlkwc{cperc} \hlstd{=} \hlkwd{cumsum}\hlstd{(perc))} \hlopt{%>%}
+  \hlkwd{select}\hlstd{(id, bpr}\hlopt{:}\hlstd{cperc)}
+\end{alltt}
+\begin{verbatim}
+##    id        bpr        perc      cperc
+## 1   1 0.08513597 0.013799264 0.01379926
+## 2   2 0.22543662 0.036539896 0.05033916
+## 3   3 0.27453052 0.044497283 0.09483644
+## 4   4 0.27230507 0.044136570 0.13897301
+## 5   1 0.61582931 0.099816700 0.23878971
+## 6   2 0.42967153 0.069643314 0.30843303
+## 7   3 0.65165567 0.105623616 0.41405664
+## 8   4 0.56773775 0.092021780 0.50607842
+## 9   1 0.11350898 0.018398105 0.52447653
+## 10  2 0.59592531 0.096590559 0.62106709
+## 11  3 0.35804998 0.058034534 0.67910162
+## 12  4 0.42880942 0.069503579 0.74860520
+## 13  1 0.05190332 0.008412751 0.75701795
+## 14  2 0.26417767 0.042819240 0.79983719
+## 15  3 0.39879073 0.064638000 0.86447519
+## 16  4 0.83613414 0.135524811 1.00000000
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{SQL joins}
+Для иллюстрации join рассмотрим два набора данных:
+
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{df1}
+\end{alltt}
+\begin{verbatim}
+##             Name Instrument
+## 1   Roger Waters       Bass
+## 2  David Gilmour     Guitar
+## 3    Syd Barrett       Bass
+## 4 Richard Wright  Keyboards
+## 5     Nick Mason      Drums
+\end{verbatim}
+\begin{alltt}
+\hlstd{df2}
+\end{alltt}
+\begin{verbatim}
+##   Instrument StrCount
+## 1       Bass        4
+## 2     Guitar        6
+## 3     Violin        4
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{SQL joins}
+Всем известные joins:
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{left_join}\hlstd{(df1, df2,} \hlstr{"Instrument"}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##             Name Instrument StrCount
+## 1   Roger Waters       Bass        4
+## 2  David Gilmour     Guitar        6
+## 3    Syd Barrett       Bass        4
+## 4 Richard Wright  Keyboards       NA
+## 5     Nick Mason      Drums       NA
+\end{verbatim}
+\begin{alltt}
+\hlkwd{full_join}\hlstd{(df1, df2,} \hlstr{"Instrument"}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##             Name Instrument StrCount
+## 1   Roger Waters       Bass        4
+## 2  David Gilmour     Guitar        6
+## 3    Syd Barrett       Bass        4
+## 4 Richard Wright  Keyboards       NA
+## 5     Nick Mason      Drums       NA
+## 6           <NA>     Violin        4
+\end{verbatim}
+\begin{alltt}
+\hlcom{#right_join(df1, df2, "Instrument")}
+\hlcom{#inner_join(df1, df2, "Instrument")}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{SQL joins}
+Не настолько известные, но тоже joins:
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{semi_join}\hlstd{(df1, df2,} \hlstr{"Instrument"}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##            Name Instrument
+## 1  Roger Waters       Bass
+## 2   Syd Barrett       Bass
+## 3 David Gilmour     Guitar
+\end{verbatim}
+\begin{alltt}
+\hlkwd{anti_join}\hlstd{(df1, df2,} \hlstr{"Instrument"}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+##             Name Instrument
+## 1     Nick Mason      Drums
+## 2 Richard Wright  Keyboards
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{rbenchmarking}
+Небольшая демонстрация быстродействия dplyr (трудоёмкие операции написаны на C++).
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{library}\hlstd{(rbenchmark)}
+\hlkwd{set.seed}\hlstd{(}\hlnum{11}\hlstd{)}
+\hlstd{n} \hlkwb{<-} \hlnum{10e6}
+\hlstd{m} \hlkwb{<-} \hlnum{100}
+\hlstd{d} \hlkwb{<-} \hlkwd{data_frame}\hlstd{(}\hlkwc{x} \hlstd{=} \hlkwd{sample}\hlstd{(m, n,} \hlkwc{replace}\hlstd{=}\hlnum{TRUE}\hlstd{),} \hlkwc{y} \hlstd{=} \hlkwd{runif}\hlstd{(n))}
+\hlstd{dm} \hlkwb{<-} \hlkwd{data_frame}\hlstd{(}\hlkwc{x} \hlstd{=} \hlkwd{sample}\hlstd{(m))}
+\hlstd{l} \hlkwb{<-} \hlkwd{vector}\hlstd{(}\hlstr{"list"}\hlstd{,} \hlnum{5}\hlstd{)}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{rbenchmarking}
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{benchmark}\hlstd{(}
+  \hlstd{d[d}\hlopt{$}\hlstd{x}\hlopt{>=}\hlnum{10} \hlopt{&} \hlstd{d}\hlopt{$}\hlstd{x}\hlopt{<}\hlnum{20}\hlstd{,],}
+  \hlstd{d} \hlopt{%>%} \hlkwd{filter}\hlstd{(x}\hlopt{>=}\hlnum{10}\hlstd{, x}\hlopt{<}\hlnum{20}\hlstd{),}
+  \hlkwc{replications}\hlstd{=}\hlnum{5}\hlstd{,}
+  \hlkwc{columns}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"test"}\hlstd{,} \hlstr{"elapsed"}\hlstd{,} \hlstr{"relative"}\hlstd{),}
+  \hlkwc{order}\hlstd{=}\hlkwa{NULL}
+\hlstd{)} \hlopt{%>%} \hlkwd{print} \hlkwb{->} \hlstd{l[[}\hlnum{1}\hlstd{]]}
+\end{alltt}
+\begin{verbatim}
+##                            test elapsed relative
+## 1     d[d$x >= 10 & d$x < 20, ]    3.89    2.016
+## 2 d %>% filter(x >= 10, x < 20)    1.93    1.000
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{rbenchmarking}
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{benchmark}\hlstd{(}
+  \hlstd{d[}\hlkwd{order}\hlstd{(d}\hlopt{$}\hlstd{x), ],}
+  \hlstd{d} \hlopt{%>%} \hlkwd{arrange}\hlstd{(x),}
+  \hlkwc{replications}\hlstd{=}\hlnum{5}\hlstd{,}
+  \hlkwc{columns}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"test"}\hlstd{,} \hlstr{"elapsed"}\hlstd{,} \hlstr{"relative"}\hlstd{),}
+  \hlkwc{order}\hlstd{=}\hlkwa{NULL}
+\hlstd{)} \hlopt{%>%} \hlkwd{print} \hlkwb{->} \hlstd{l[[}\hlnum{2}\hlstd{]]}
+\end{alltt}
+\begin{verbatim}
+##               test elapsed relative
+## 1  d[order(d$x), ]   29.44     1.23
+## 2 d %>% arrange(x)   23.94     1.00
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{rbenchmarking}
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{benchmark}\hlstd{(}
+  \hlstd{d}\hlopt{$}\hlstd{y2} \hlkwb{<-} \hlstd{d}\hlopt{$}\hlstd{y} \hlopt{+} \hlstd{d}\hlopt{$}\hlstd{x}\hlopt{/}\hlnum{2}\hlstd{,}
+  \hlstd{d} \hlopt{%>%} \hlkwd{mutate}\hlstd{(}\hlkwc{y2} \hlstd{= y} \hlopt{+} \hlstd{x}\hlopt{/}\hlnum{2}\hlstd{),}
+  \hlkwc{replications}\hlstd{=}\hlnum{5}\hlstd{,}
+  \hlkwc{columns}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"test"}\hlstd{,} \hlstr{"elapsed"}\hlstd{,} \hlstr{"relative"}\hlstd{),}
+  \hlkwc{order}\hlstd{=}\hlkwa{NULL}
+\hlstd{)} \hlopt{%>%} \hlkwd{print} \hlkwb{->} \hlstd{l[[}\hlnum{3}\hlstd{]]}
+\end{alltt}
+\begin{verbatim}
+##                         test elapsed relative
+## 1        d$y2 <- d$y + d$x/2    0.25     1.00
+## 2 d %>% mutate(y2 = y + x/2)    0.28     1.12
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{rbenchmarking}
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{benchmark}\hlstd{(}
+  \hlkwd{tapply}\hlstd{(d}\hlopt{$}\hlstd{y, d}\hlopt{$}\hlstd{x, mean),}
+  \hlstd{d} \hlopt{%>%} \hlkwd{group_by}\hlstd{(x)} \hlopt{%>%} \hlkwd{summarize}\hlstd{(}\hlkwc{ym} \hlstd{=} \hlkwd{mean}\hlstd{(y)),}
+  \hlkwc{replications}\hlstd{=}\hlnum{5}\hlstd{,}
+  \hlkwc{columns}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"test"}\hlstd{,} \hlstr{"elapsed"}\hlstd{,} \hlstr{"relative"}\hlstd{),}
+  \hlkwc{order}\hlstd{=}\hlkwa{NULL}
+\hlstd{)} \hlopt{%>%} \hlkwd{print} \hlkwb{->} \hlstd{l[[}\hlnum{4}\hlstd{]]}
+\end{alltt}
+\begin{verbatim}
+##                                            test elapsed
+## 1                        tapply(d$y, d$x, mean)    4.20
+## 2 d %>% group_by(x) %>% summarize(ym = mean(y))    2.66
+##   relative
+## 1    1.579
+## 2    1.000
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{rbenchmarking}
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlkwd{benchmark}\hlstd{(}
+  \hlkwd{merge}\hlstd{(d, dm,} \hlkwc{by}\hlstd{=}\hlstr{"x"}\hlstd{),}
+  \hlstd{d} \hlopt{%>%} \hlkwd{inner_join}\hlstd{(dm,} \hlkwc{by}\hlstd{=}\hlstr{"x"}\hlstd{),}
+  \hlkwc{replications}\hlstd{=}\hlnum{1}\hlstd{,}
+  \hlkwc{columns}\hlstd{=}\hlkwd{c}\hlstd{(}\hlstr{"test"}\hlstd{,} \hlstr{"elapsed"}\hlstd{,} \hlstr{"relative"}\hlstd{),}
+  \hlkwc{order}\hlstd{=}\hlkwa{NULL}
+\hlstd{)} \hlopt{%>%} \hlkwd{print} \hlkwb{->} \hlstd{l[[}\hlnum{5}\hlstd{]]}
+\end{alltt}
+\begin{verbatim}
+##                             test elapsed relative
+## 1         merge(d, dm, by = "x")   40.33  118.618
+## 2 d %>% inner_join(dm, by = "x")    0.34    1.000
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{rbenchmarking}
+Сводная таблица быстродействия 
+\par
+(относительное время исполнения, меньше -- лучше):
+\begin{center}
+  \begin{tabular}{ c | c | c | c | c | c }
+    \hline
+          & Filter & Sort & New Variable & Aggregation & Join \\ \hline
+    base  & 2.016
+          & 1.23
+          & 1
+          & 1.579
+          & 118.618 \\ \hline
+    dplyr & 1
+          & 1
+          & 1.12
+          & 1
+          & 1 \\
+    \hline
+  \end{tabular}
+\end{center}
+\pause
+Интересный факт: в Rstudio оператор \%>\% имеет своё сочетание горячих клавиш (Ctrl + Shift + M)! 
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{magrittr::\%<>\%}
+С помощью конвейеров можно создавать не только анонимные функции:
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlnum{0} \hlopt{%>%} \hlkwd{cos} \hlopt{%>%} \hlkwd{sin}
+\end{alltt}
+\begin{verbatim}
+## [1] 0.841471
+\end{verbatim}
+\begin{alltt}
+\hlstd{f} \hlkwb{<-} \hlstd{.} \hlopt{%>%} \hlkwd{cos} \hlopt{%>%} \hlkwd{sin}
+\hlstd{f}\hlstd{(}\hlnum{0}\hlstd{)}
+\end{alltt}
+\begin{verbatim}
+## [1] 0.841471
+\end{verbatim}
+\begin{alltt}
+\hlkwd{sin}\hlstd{(}\hlkwd{cos}\hlstd{(}\hlnum{0}\hlstd{))}
+\end{alltt}
+\begin{verbatim}
+## [1] 0.841471
+\end{verbatim}
+\end{kframe}
+\end{knitrout}
+\pause
+Есть ещё несколько конвейерных операторов, в том числе присваивающий...
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{df} \hlkwb{<-} \hlkwd{na.omit}\hlstd{(df)}
+\hlstd{df} \hlopt{%<>%} \hlkwd{na.omit}
+\end{alltt}
+\end{kframe}
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}[fragile]{magrittr::\%T>\%}
+... и Tee operator (производит side-effect):
+\begin{knitrout}\scriptsize
+\definecolor{shadecolor}{rgb}{0.882, 0.882, 0.882}\color{fgcolor}\begin{kframe}
+\begin{alltt}
+\hlstd{mtcars} \hlopt{%>%}
+  \hlkwd{subset}\hlstd{(cyl} \hlopt{==} \hlnum{4}\hlstd{,} \hlkwd{c}\hlstd{(mpg, hp))} \hlopt{%T>%}
+  \hlkwd{plot} \hlopt{%>%}
+  \hlkwd{colMeans}
+\end{alltt}
+\begin{verbatim}
+##      mpg       hp 
+## 26.66364 82.63636
+\end{verbatim}
+\end{kframe}
+\begin{center}
+\includegraphics[width=.75\linewidth]{figure/magrittr-final-3-1} 
+\end{center}
+
+\end{knitrout}
+\end{frame}
+% --------------------------------------------------------------
+\begin{frame}{Ссылки}
+При подготовке доклада были использованы следующие материалы:
+\footnotesize{
+\begin{itemize}
+\item \url{https://github.com/hadley/tidyr}
+\item \url{https://github.com/hadley/dplyr}
+\item \url{https://github.com/smbache/magrittr}
+\pause
+\item \url{http://rpubs.com/bradleyboehmke/data_wrangling}
+\item \url{http://www.rstudio.com/wp-content/uploads/2015/02/data-wrangling-cheatsheet.pdf}
+\pause
+\item \url{http://datascience.la/dplyr-and-a-very-basic-benchmark/}
+\item \url{http://zevross.com/blog/2015/01/13/a-new-data-processing-workflow-for-r-dplyr-magrittr-tidyr-ggplot2/}
+\end{itemize}
+\pause
+\begin{center}
+\Large{Спасибо!}
+\end{center}
+}
+\end{frame}
+% --------------------------------------------------------------
+\end{document}
